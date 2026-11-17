@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>¡Estás invitado a mi carrera de cumpleaños!</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Russo+One&family=Titillium+Web:wght@400;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+<style>
+  /* ====== Colores ====== */
+  :root {
+    --asfalto: #1d1f23;
+    --asfalto-claro: #2a2d33;
+    --rojo: #e10600;
+    --rojo-apagado: #3a1412;
+    --blanco: #f5f5f2;
+    --gris: #9aa0a8;
+    --amarillo: #ffd400;
+    color-scheme: dark;
+    box-sizing: border-box;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  *, *::before, *::after { box-sizing: inherit; margin: 0; padding: 0; }
+  html, body { height: 100%; }
+  body {
+    background: var(--asfalto);
+    background-image: radial-gradient(rgba(255,255,255,.035) 1px, transparent 1px);
+    background-size: 4px 4px;
+    color: var(--blanco);
+    font-family: "Titillium Web", "Segoe UI", system-ui, sans-serif;
+    overflow: hidden;
+  }
+
+  /* ====== Escena 1: semáforo ====== */
+  #salida {
+    position: fixed; inset: 0;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 2.5rem; padding: 1.5rem;
+    transition: opacity .4s;
+  }
+  .portico {
+    display: flex; gap: clamp(.4rem, 2vw, 1rem);
+    padding: 1rem clamp(.6rem, 3vw, 1.4rem);
+    background: #0d0e10;
+    border-radius: 10px;
+    border-top: 6px solid #333;
+  }
+  .modulo {
+    display: grid; gap: .5rem;
+    padding: .6rem;
+    background: #050506; border-radius: 8px;
+  }
+  .luz {
+    width: clamp(36px, 11vw, 64px); aspect-ratio: 1;
+    border-radius: 50%;
+    background: var(--rojo-apagado);
+    box-shadow: inset 0 -4px 8px rgba(0,0,0,.6);
+    transition: background .08s, box-shadow .08s;
+  }
+  .modulo.on .luz.roja {
+    background: radial-gradient(circle at 40% 35%, #ff6a5c, var(--rojo) 60%);
+    box-shadow: 0 0 24px var(--rojo), 0 0 60px rgba(225,6,0,.5);
+  }
+  .luz.base { background: #1a1a1a; }
+
+  .texto-salida {
+    font-family: "Russo One", Impact, sans-serif;
+    font-size: clamp(1.4rem, 5vw, 2.4rem);
+    text-align: center; min-height: 1.3em;
+    letter-spacing: .02em;
+  }
+  .boton {
+    font: 700 1.1rem "Titillium Web", system-ui, sans-serif;
+    color: var(--asfalto); background: var(--blanco);
+    border: 0; border-radius: 999px;
+    padding: .9rem 2.2rem; cursor: pointer;
+  }
+  .boton:focus-visible { outline: 3px solid var(--amarillo); outline-offset: 3px; }
+  .boton:active { transform: scale(.97); }
+
+  /* Destello y líneas de velocidad al arrancar */
+  #velocidad {
+    position: fixed; inset: 0; pointer-events: none; opacity: 0;
+    background: repeating-linear-gradient(90deg, transparent 0 40px, rgba(255,255,255,.18) 40px 42px);
+  }
+  #velocidad.activo { animation: zoom .7s ease-in forwards; }
+  @keyframes zoom {
+    0% { opacity: 0; transform: scaleX(1); }
+    30% { opacity: 1; }
+    100% { opacity: 0; transform: scaleX(6); }
+  }
+
+  /* ====== Escena 2: invitación ====== */
+  #invitacion {
+    position: fixed; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    padding: 1.2rem;
+    overflow-y: auto;
+    visibility: hidden;
+  }
+  #invitacion.visible { visibility: visible; }
+  .boleto {
+    width: min(100%, 440px);
+    background: var(--blanco); color: var(--asfalto);
+    border-radius: 14px; overflow: hidden;
+    transform: translateY(110vh) rotate(-4deg);
+  }
+  #invitacion.visible .boleto { animation: entrada .9s cubic-bezier(.2,.9,.25,1.1) forwards; }
+  @keyframes entrada { to { transform: translateY(0) rotate(0); } }
+
+  .piano { /* bordillo rojo y blanco */
+    height: 18px;
+    background: repeating-linear-gradient(-45deg, var(--rojo) 0 16px, var(--blanco) 16px 32px);
+  }
+  .cuadros {
+    height: 22px;
+    background:
+      conic-gradient(var(--asfalto) 25%, var(--blanco) 0 50%, var(--asfalto) 0 75%, var(--blanco) 0) 0 0 / 22px 22px;
+  }
+  .cuerpo { padding: 1.6rem 1.6rem 1.8rem; text-align: center; }
+  .numero {
+    font-family: "Russo One", Impact, sans-serif;
+    font-size: clamp(5rem, 28vw, 8rem); line-height: .9;
+    color: var(--rojo);
+    font-style: italic;
+  }
+  .nombre {
+    font-family: "Russo One", Impact, sans-serif;
+    font-size: clamp(1.6rem, 7vw, 2.2rem);
+    margin-top: .3rem;
+  }
+  .lema { color: #555a62; margin-top: .3rem; font-size: 1.05rem; }
+
+  .datos {
+    display: grid; grid-template-columns: 1fr 1fr; gap: .8rem;
+    margin: 1.4rem 0; text-align: left;
+  }
+  .dato {
+    background: #e7e7e3; border-radius: 8px; padding: .7rem .9rem;
+    border-left: 4px solid var(--rojo);
+  }
+  .dato.ancho { grid-column: 1 / -1; }
+  .dato small { display: block; color: #5f646b; font-size: .85rem; }
+  .dato strong { font-size: 1.1rem; line-height: 1.3; }
+
+  .acciones { display: flex; flex-direction: column; gap: .6rem; }
+  .acciones input {
+    font: 600 1.05rem "Titillium Web", system-ui, sans-serif;
+    padding: .8rem 1rem; border-radius: 999px;
+    border: 2px solid #c9c9c4; background: #fff; color: var(--asfalto);
+    text-align: center;
+  }
+  .acciones input:focus-visible { outline: 3px solid var(--amarillo); outline-offset: 2px; border-color: var(--asfalto); }
+  .acciones a, .acciones button {
+    display: block; text-decoration: none; font: 700 1rem "Titillium Web", system-ui, sans-serif;
+    padding: .85rem; border-radius: 999px; border: 0; cursor: pointer; width: 100%;
+  }
+  .acciones a:focus-visible, .acciones button:focus-visible { outline: 3px solid var(--amarillo); outline-offset: 3px; }
+  .acciones button:disabled { opacity: .6; cursor: wait; }
+  .confirmar { background: var(--rojo); color: #fff; }
+  .mapa { background: var(--asfalto); color: var(--blanco); }
+  .estado { min-height: 1.4em; font-weight: 600; }
+  .estado.ok { color: #1a7f37; }
+  .estado.error { color: var(--rojo); }
+  .repetir {
+    margin-top: 1rem; background: none; border: 0; color: #5f646b;
+    font: 600 .95rem "Titillium Web", system-ui, sans-serif; cursor: pointer; text-decoration: underline;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .boleto { transform: none; }
+    #invitacion.visible .boleto { animation: none; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Escena 1 -->
+<section id="salida" aria-live="polite">
+  <div class="portico" aria-hidden="true">
+    <div class="modulo"><span class="luz base"></span><span class="luz roja"></span><span class="luz roja"></span></div>
+    <div class="modulo"><span class="luz base"></span><span class="luz roja"></span><span class="luz roja"></span></div>
+    <div class="modulo"><span class="luz base"></span><span class="luz roja"></span><span class="luz roja"></span></div>
+    <div class="modulo"><span class="luz base"></span><span class="luz roja"></span><span class="luz roja"></span></div>
+    <div class="modulo"><span class="luz base"></span><span class="luz roja"></span><span class="luz roja"></span></div>
+  </div>
+  <p class="texto-salida" id="textoSalida">Tienes una invitación en parrilla</p>
+  <button class="boton" id="btnArrancar">Encender motores</button>
+</section>
+
+<div id="velocidad"></div>
+
+<!-- Escena 2 -->
+<section id="invitacion">
+  <article class="boleto">
+    <div class="piano"></div>
+    <div class="cuerpo">
+      <div class="numero" id="edad"></div>
+      <h1 class="nombre" id="nombre"></h1>
+      <p class="lema" id="lema"></p>
+
+      <div class="datos">
+        <div class="dato"><small>Fecha</small><strong id="fecha"></strong></div>
+        <div class="dato"><small>Salida</small><strong id="hora"></strong></div>
+        <div class="dato ancho"><small>Circuito</small><strong id="lugar"></strong></div>
+      </div>
+
+      <form class="acciones" id="formConfirmar">
+        <label for="invitado" class="dato" style="border:0;background:none;padding:0;text-align:center"><small>Escribe tu nombre para entrar a la lista</small></label>
+        <input id="invitado" name="nombre" maxlength="60" autocomplete="name" placeholder="Tu nombre" required>
+        <button type="submit" class="confirmar" id="btnConfirmar">Confirmar asistencia</button>
+        <p class="estado" id="estado" role="status"></p>
+        <a class="mapa" id="btnMapa" target="_blank" rel="noopener">Ver ubicación</a>
+      </form>
+      <button class="repetir" id="btnRepetir">Ver la salida otra vez</button>
+    </div>
+    <div class="cuadros"></div>
+  </article>
+</section>
+
+<script>
+  /* ============================================
+     EDITA AQUÍ TUS DATOS
+     ============================================ */
+  const DATOS = {
+    nombre: "", // si lo llenas, dirá "¡Nombre cumple 22!"; vacío dice "¡Cumplo 22!"
+    edad: 22,
+    lema: "Luces fuera a las 9. No llegues tarde a la parrilla.",
+    fecha: "Sábado 28 de noviembre",
+    hora: "9:00 p. m.",
+    lugar: "La Pérgola",
+    mapa: "https://maps.google.com/?q=La+Pergola", // pon aquí el enlace exacto de Google Maps
+  };
+  /* ============================================ */
+
+  document.getElementById("edad").textContent = DATOS.edad;
+  document.getElementById("nombre").textContent = DATOS.nombre
+    ? "¡" + DATOS.nombre + " cumple " + DATOS.edad + "!"
+    : "¡Cumplo " + DATOS.edad + "!";
+  document.getElementById("lema").textContent = DATOS.lema;
+  document.getElementById("fecha").textContent = DATOS.fecha;
+  document.getElementById("hora").textContent = DATOS.hora;
+  document.getElementById("lugar").textContent = DATOS.lugar;
+  document.getElementById("btnMapa").href = DATOS.mapa;
+
+  // Confirmación de asistencia → se guarda en la lista (api/rsvp.js)
+  const form = document.getElementById("formConfirmar");
+  const campo = document.getElementById("invitado");
+  const estado = document.getElementById("estado");
+  const btnConf = document.getElementById("btnConfirmar");
+
+  function marcarConfirmado(nombre) {
+    campo.value = nombre; campo.disabled = true;
+    btnConf.disabled = true; btnConf.textContent = "Asistencia confirmada";
+    estado.className = "estado ok";
+    estado.textContent = "¡Listo, " + nombre + "! Ya estás en la lista. 🏁";
+  }
+  try {
+    const previo = localStorage.getItem("rsvp-confirmado");
+    if (previo) marcarConfirmado(previo);
+  } catch (e) {}
+
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const nombre = campo.value.trim();
+    if (nombre.length < 2) {
+      estado.className = "estado error";
+      estado.textContent = "Escribe tu nombre para confirmar.";
+      return;
+    }
+    btnConf.disabled = true; btnConf.textContent = "Confirmando…";
+    estado.textContent = "";
+    try {
+      const r = await fetch("/api/rsvp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ nombre }),
+      });
+      if (!r.ok) throw new Error();
+      try { localStorage.setItem("rsvp-confirmado", nombre); } catch (e) {}
+      marcarConfirmado(nombre);
+      confeti();
+    } catch (err) {
+      btnConf.disabled = false; btnConf.textContent = "Confirmar asistencia";
+      estado.className = "estado error";
+      estado.textContent = "No se pudo guardar tu confirmación. Revisa tu conexión e inténtalo de nuevo.";
+    }
+  });
+
+  const salida = document.getElementById("salida");
+  const invitacion = document.getElementById("invitacion");
+  const modulos = document.querySelectorAll(".modulo");
+  const texto = document.getElementById("textoSalida");
+  const btn = document.getElementById("btnArrancar");
+  const velocidad = document.getElementById("velocidad");
+  const sinMovimiento = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const espera = ms => new Promise(r => setTimeout(r, ms));
+
+  function confeti() {
+    if (sinMovimiento || typeof confetti !== "function") return;
+    const colores = ["#e10600", "#f5f5f2", "#1d1f23", "#ffd400"];
+    confetti({ particleCount: 90, angle: 60, spread: 70, origin: { x: 0, y: .7 }, colors: colores });
+    confetti({ particleCount: 90, angle: 120, spread: 70, origin: { x: 1, y: .7 }, colors: colores });
+  }
+
+  async function arrancar() {
+    btn.hidden = true;
+    texto.textContent = "";
+    if (navigator.vibrate) navigator.vibrate(0);
+
+    // Las 5 luces se encienden una por segundo
+    for (const m of modulos) {
+      m.classList.add("on");
+      if (navigator.vibrate) navigator.vibrate(40);
+      await espera(sinMovimiento ? 150 : 1000);
+    }
+    // Pausa aleatoria, como en la salida real
+    await espera(sinMovimiento ? 200 : 600 + Math.random() * 1400);
+
+    modulos.forEach(m => m.classList.remove("on"));
+    texto.textContent = "¡Se apagan las luces y arrancamos!";
+    if (navigator.vibrate) navigator.vibrate([80, 40, 120]);
+
+    await espera(sinMovimiento ? 300 : 700);
+    if (!sinMovimiento) velocidad.classList.add("activo");
+    salida.style.opacity = 0;
+    await espera(300);
+    salida.hidden = true;
+    invitacion.classList.add("visible");
+    await espera(sinMovimiento ? 0 : 700);
+    confeti();
+  }
+
+  btn.addEventListener("click", arrancar);
+
+  document.getElementById("btnRepetir").addEventListener("click", () => {
+    invitacion.classList.remove("visible");
+    velocidad.classList.remove("activo");
+    salida.hidden = false;
+    salida.style.opacity = 1;
+    texto.textContent = "Tienes una invitación en parrilla";
+    btn.hidden = false;
+    btn.focus();
+  });
+</script>
+</body>
+</html>
