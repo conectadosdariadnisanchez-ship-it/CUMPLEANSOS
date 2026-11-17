@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>Lista de confirmados</title>
+<link href="https://fonts.googleapis.com/css2?family=Russo+One&family=Titillium+Web:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root { --asfalto:#1d1f23; --blanco:#f5f5f2; --rojo:#e10600; --gris:#9aa0a8; color-scheme: dark; }
+  * { box-sizing: border-box; margin: 0; }
+  body { background: var(--asfalto); color: var(--blanco); font-family: "Titillium Web", system-ui, sans-serif;
+         padding: calc(2rem + env(safe-area-inset-top, 0px)) 1.2rem 2rem; }
+  main { max-width: 480px; margin: 0 auto; }
+  h1 { font-family: "Russo One", Impact, sans-serif; font-size: 2rem; }
+  .total { color: var(--gris); margin: .3rem 0 1.5rem; }
+  form { display: flex; gap: .5rem; margin-bottom: 1.5rem; }
+  input, button { font: 600 1rem inherit; padding: .7rem 1rem; border-radius: 999px; border: 0; }
+  input { flex: 1; min-width: 0; }
+  button { background: var(--rojo); color: #fff; cursor: pointer; }
+  ol { padding-left: 1.6rem; }
+  li { padding: .6rem 0; border-bottom: 1px solid #33363d; font-size: 1.1rem; }
+  li small { color: var(--gris); font-size: .85rem; display: block; }
+  .error { color: #ff6a5c; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Parrilla de salida</h1>
+  <p class="total" id="total">Escribe la clave para ver quién confirmó.</p>
+  <form id="f">
+    <label for="clave" hidden>Clave</label>
+    <input id="clave" type="password" placeholder="Clave" required>
+    <button>Ver lista</button>
+  </form>
+  <ol id="lista"></ol>
+</main>
+<script>
+  document.getElementById("f").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const total = document.getElementById("total");
+    const ol = document.getElementById("lista");
+    ol.innerHTML = "";
+    try {
+      const r = await fetch("/api/rsvp?clave=" + encodeURIComponent(document.getElementById("clave").value));
+      const d = await r.json();
+      if (!r.ok) throw new Error(d.error);
+      total.className = "total";
+      total.textContent = d.total + (d.total === 1 ? " persona confirmada" : " personas confirmadas");
+      d.lista.forEach(p => {
+        const li = document.createElement("li");
+        li.textContent = p.nombre;
+        const s = document.createElement("small");
+        s.textContent = new Date(p.fecha).toLocaleString("es");
+        li.appendChild(s);
+        ol.appendChild(li);
+      });
+    } catch (err) {
+      total.className = "total error";
+      total.textContent = err.message || "No se pudo cargar la lista.";
+    }
+  });
+</script>
+</body>
+</html>
